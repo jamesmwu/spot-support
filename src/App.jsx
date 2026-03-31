@@ -1,120 +1,107 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useState, useEffect } from 'react'
+import { getKnowledgeBases } from './services/api'
+import useChat from './hooks/useChat'
+import URLInput from './components/URLInput'
+import ChatWindow from './components/ChatWindow'
+import ChatInput from './components/ChatInput'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [knowledgeBase, setKnowledgeBase] = useState(null)
+  const [knowledgeBases, setKnowledgeBases] = useState([])
+
+  const { messages, isStreaming, error, send, clear } = useChat(knowledgeBase?.id)
+
+  useEffect(() => {
+    getKnowledgeBases()
+      .then(setKnowledgeBases)
+      .catch(() => {})
+  }, [])
+
+  function handleCrawlComplete(data) {
+    setKnowledgeBase(data)
+    setKnowledgeBases((prev) => {
+      const without = prev.filter((kb) => kb.id !== data.id)
+      return [data, ...without]
+    })
+  }
+
+  function selectKnowledgeBase(kb) {
+    if (kb.id !== knowledgeBase?.id) {
+      clear()
+      setKnowledgeBase(kb)
+    }
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="app">
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          <h1>Spot Support</h1>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
+        <div className="sidebar-content">
+          {knowledgeBases.length === 0 ? (
+            <p className="sidebar-hint">
+              Index a website to get started
+            </p>
+          ) : (
+            <div className="kb-list">
+              <p className="kb-list-label">Knowledge Bases</p>
+              {knowledgeBases.map((kb) => (
+                <button
+                  key={kb.id}
+                  className={`kb-item ${knowledgeBase?.id === kb.id ? 'active' : ''}`}
+                  onClick={() => selectKnowledgeBase(kb)}
+                >
+                  <span className="kb-item-url">{kb.url}</span>
+                  <span className="kb-item-meta">
+                    {kb.pageCount} page{kb.pageCount !== 1 ? 's' : ''}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      </aside>
 
-      <div className="ticks"></div>
+      <main className="main">
+        <header className="main-header">
+          <URLInput onCrawlComplete={handleCrawlComplete} />
+          {knowledgeBase && (
+            <div className="kb-badge">
+              Using: <strong>{knowledgeBase.url}</strong>
+              &nbsp;&middot;&nbsp;{knowledgeBase.pageCount} page
+              {knowledgeBase.pageCount !== 1 ? 's' : ''} indexed
+            </div>
+          )}
+        </header>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+        <div className="chat-area">
+          {messages.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-icon">💬</div>
+              <h2>Welcome to Spot Support</h2>
+              <p>
+                {knowledgeBase
+                  ? 'Your knowledge base is ready. Start asking questions below.'
+                  : 'Index a website above, then ask questions about it.'}
+              </p>
+            </div>
+          ) : (
+            <ChatWindow messages={messages} isStreaming={isStreaming} />
+          )}
+          {error && <p className="chat-error">{error}</p>}
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+        <footer className="input-area">
+          <ChatInput
+            onSend={send}
+            disabled={!knowledgeBase}
+            isStreaming={isStreaming}
+          />
+        </footer>
+      </main>
+    </div>
   )
 }
 
