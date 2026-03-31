@@ -1,6 +1,6 @@
-# Spot Support
+# SpotSupport
 
-Spot Support is an AI-powered support chat tool. Point it at any website, and it will crawl and index the site's content into a knowledge base. You can then ask questions about the site and get answers grounded in the indexed content, powered by OpenAI.
+SpotSupport is an AI-powered support chat tool. Point it at any website, and it will crawl and index the site's content into a knowledge base. You can then ask questions about the site and get answers grounded in the indexed content, powered by OpenAI.
 
 ## Tech Stack
 
