@@ -1,11 +1,13 @@
 import { useState, useCallback, useRef } from 'react'
-import { sendMessage } from '../services/api'
+import { sendMessage, saveChatSession } from '../services/api'
 
 export default function useChat(knowledgeBaseId) {
   const [messages, setMessages] = useState([])
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState(null)
   const abortRef = useRef(null)
+  const messagesRef = useRef(messages)
+  messagesRef.current = messages
 
   const send = useCallback(
     async (prompt) => {
@@ -21,6 +23,8 @@ export default function useChat(knowledgeBaseId) {
 
       const controller = new AbortController()
       abortRef.current = controller
+
+      let streamed = false
 
       try {
         const res = await sendMessage(
@@ -52,6 +56,7 @@ export default function useChat(knowledgeBaseId) {
               break
             }
 
+            streamed = true
             setMessages((prev) => {
               const updated = [...prev]
               const last = updated[updated.length - 1]
@@ -70,10 +75,23 @@ export default function useChat(knowledgeBaseId) {
       } finally {
         setIsStreaming(false)
         abortRef.current = null
+
+        if (streamed && knowledgeBaseId) {
+          saveChatSession({
+            id: knowledgeBaseId,
+            knowledgeBaseId,
+            messages: messagesRef.current,
+          }).catch(() => {})
+        }
       }
     },
     [knowledgeBaseId, isStreaming, messages],
   )
+
+  const loadMessages = useCallback((msgs) => {
+    setMessages(msgs)
+    setError(null)
+  }, [])
 
   const clear = useCallback(() => {
     if (abortRef.current) abortRef.current.abort()
@@ -82,5 +100,5 @@ export default function useChat(knowledgeBaseId) {
     setIsStreaming(false)
   }, [])
 
-  return { messages, isStreaming, error, send, clear }
+  return { messages, isStreaming, error, send, clear, loadMessages }
 }

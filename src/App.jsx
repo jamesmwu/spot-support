@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getKnowledgeBases } from './services/api'
+import { getKnowledgeBases, getChatSession, deleteSession } from './services/api'
 import useChat from './hooks/useChat'
 import URLInput from './components/URLInput'
 import ChatWindow from './components/ChatWindow'
@@ -10,13 +10,24 @@ function App() {
   const [knowledgeBase, setKnowledgeBase] = useState(null)
   const [knowledgeBases, setKnowledgeBases] = useState([])
 
-  const { messages, isStreaming, error, send, clear } = useChat(knowledgeBase?.id)
+  const { messages, isStreaming, error, send, clear, loadMessages } = useChat(knowledgeBase?.id)
 
   useEffect(() => {
     getKnowledgeBases()
       .then(setKnowledgeBases)
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!knowledgeBase) return
+    getChatSession(knowledgeBase.id)
+      .then((session) => {
+        if (session?.messages?.length) {
+          loadMessages(session.messages)
+        }
+      })
+      .catch(() => {})
+  }, [knowledgeBase, loadMessages])
 
   function handleCrawlComplete(data) {
     setKnowledgeBase(data)
@@ -33,11 +44,18 @@ function App() {
     }
   }
 
+  function handleClear() {
+    clear()
+    if (knowledgeBase) {
+      deleteSession(knowledgeBase.id).catch(() => {})
+    }
+  }
+
   return (
     <div className="app">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <h1>Spot Support</h1>
+          <h1>SpotSupport</h1>
         </div>
         <div className="sidebar-content">
           {knowledgeBases.length === 0 ? (
@@ -68,10 +86,21 @@ function App() {
         <header className="main-header">
           <URLInput onCrawlComplete={handleCrawlComplete} />
           {knowledgeBase && (
-            <div className="kb-badge">
-              Using: <strong>{knowledgeBase.url}</strong>
-              &nbsp;&middot;&nbsp;{knowledgeBase.pageCount} page
-              {knowledgeBase.pageCount !== 1 ? 's' : ''} indexed
+            <div className="kb-badge-row">
+              <div className="kb-badge">
+                Using: <strong>{knowledgeBase.url}</strong>
+                &nbsp;&middot;&nbsp;{knowledgeBase.pageCount} page
+                {knowledgeBase.pageCount !== 1 ? 's' : ''} indexed
+              </div>
+              {messages.length > 0 && (
+                <button
+                  className="clear-btn"
+                  onClick={handleClear}
+                  disabled={isStreaming}
+                >
+                  Clear chat
+                </button>
+              )}
             </div>
           )}
         </header>
@@ -80,7 +109,7 @@ function App() {
           {messages.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">💬</div>
-              <h2>Welcome to Spot Support</h2>
+              <h2>Welcome to SpotSupport</h2>
               <p>
                 {knowledgeBase
                   ? 'Your knowledge base is ready. Start asking questions below.'

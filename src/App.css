@@ -128,8 +128,14 @@
   color: #ef4444;
 }
 
-.kb-badge {
+.kb-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-top: 10px;
+}
+
+.kb-badge {
   font-size: 13px;
   color: var(--text-muted);
 }
@@ -137,6 +143,30 @@
 .kb-badge strong {
   color: var(--text-h);
   font-weight: 500;
+}
+
+.clear-btn {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: var(--sans);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.clear-btn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.clear-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* ── Knowledge base list (sidebar) ── */
